@@ -54,32 +54,42 @@ struct relocation_type_table_t {
 
 void RelocationEntry::describe() {
     std::printf("[%4lx] %s %s %s %s %s\n",
-                index, int_to_hex(offset).c_str(), int_to_hex(symbol_value).c_str(), symbol_name.c_str(), relocation_type_table[type].str, int_to_hex(addend).c_str());
+                index, int_to_hex(offset).c_str(), int_to_hex(symbol_value).c_str(), symbol_name.c_str(),
+                relocation_type_table[type].str, int_to_hex(addend).c_str());
 }
 
-std::unordered_set<std::shared_ptr<RelocationEntry>>
-findRelocationEntries(std::shared_ptr<ELFIO::elfio> elf_file) {
-    std::unordered_set<std::shared_ptr<RelocationEntry>> relocation_entries;
-        for (auto section : elf_file->sections) {
-            if (section->get_type() == SHT_RELA || section->get_type() == SHT_REL) {
-                ELFIO::relocation_section_accessor relocation_section_accessor(*elf_file.get(), section);
-                for (ELFIO::Elf_Xword index = 0; index < relocation_section_accessor.get_entries_num(); ++index) {
-                    ELFIO::Elf64_Addr offset;
-                    ELFIO::Elf64_Addr symbolValue;
-                    std::string symbolName;
-                    ELFIO::Elf_Word type;
-                    ELFIO::Elf_Sxword addend;
-                    ELFIO::Elf_Sxword calcValue; // CalcValue is dropped because it is not computed for x86_64 by ELFIO
-                    relocation_section_accessor.get_entry(index, offset, symbolValue, symbolName, type, addend,
-                                                          calcValue);
-                    std::shared_ptr<RelocationEntry> relocation_entry = std::make_shared<RelocationEntry>(index, offset,
-                                                                                                          symbolValue,
-                                                                                                          symbolName,
-                                                                                                          type, addend);
-                    relocation_entry->describe();
-                    relocation_entries.insert(relocation_entry);
+std::unordered_map<std::string, std::unordered_set<std::shared_ptr<RelocationEntry>> *> *
+generateRelocationEntries(const std::shared_ptr<ELFIO::elfio> &elf_file, ObjectFile *const object_file) {
+    auto relocation_entries =
+            new std::unordered_map<std::string, std::unordered_set<std::shared_ptr<RelocationEntry>> *>();
+    for (auto section : elf_file->sections) {
+        if (section->get_type() == SHT_RELA || section->get_type() == SHT_REL) {
+            ELFIO::relocation_section_accessor relocation_section_accessor(*elf_file, section);
+            for (ELFIO::Elf_Xword index = 0; index < relocation_section_accessor.get_entries_num(); ++index) {
+                ELFIO::Elf64_Addr offset;
+                ELFIO::Elf64_Addr symbolValue;
+                std::string symbolName;
+                ELFIO::Elf_Word type;
+                ELFIO::Elf_Sxword addend;
+                ELFIO::Elf_Sxword calcValue; // CalcValue is dropped because it is not computed for x86_64 by ELFIO
+                relocation_section_accessor.get_entry(index, offset, symbolValue, symbolName, type, addend,
+                                                      calcValue);
+                std::shared_ptr<RelocationEntry> relocation_entry = std::make_shared<RelocationEntry>(index, offset,
+                                                                                                      symbolValue,
+                                                                                                      symbolName,
+                                                                                                      type, addend,
+                                                                                                      object_file);
+                relocation_entry->describe();
+                auto relocation_entry_set = relocation_entries->find(*relocation_entry->getSymbolName());
+                if (  relocation_entry_set != relocation_entries->end()) {
+                    (*relocation_entry_set).second->insert(relocation_entry);
+                } else {
+                    auto *relocations = new std::unordered_set<std::shared_ptr<RelocationEntry>>();
+                    relocations->insert(relocation_entry);
+                    relocation_entries->insert(std::make_pair(*relocation_entry->getSymbolName(), relocations));
                 }
             }
         }
+    }
     return relocation_entries;
 }

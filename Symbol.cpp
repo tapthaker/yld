@@ -7,7 +7,7 @@
 #include <unordered_set>
 #include <memory>
 
-section *get_symbol_section(std::shared_ptr<elfio> reader) {
+section *get_symbol_section(const std::shared_ptr<elfio>& reader) {
     for (auto section : reader->sections) {
         if (section->get_type() == SHT_SYMTAB) {
             return section;
@@ -16,7 +16,7 @@ section *get_symbol_section(std::shared_ptr<elfio> reader) {
     return nullptr;
 }
 
-std::unordered_set<std::shared_ptr<Symbol>> findSymbols(std::shared_ptr<elfio> elf_file) {
+std::unordered_set<std::shared_ptr<Symbol>> findSymbols(const std::shared_ptr<elfio>& elf_file) {
     std::unordered_set<std::shared_ptr<Symbol>> symbols;
     section *sym_section = get_symbol_section(elf_file);
     const symbol_section_accessor symbols_accessor(*elf_file, sym_section);

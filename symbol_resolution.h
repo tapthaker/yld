@@ -11,31 +11,31 @@
 
 using namespace ELFIO;
 
-
 class SymbolResolutionResult {
 
 public:
     SymbolResolutionResult() {
-        resolved_symbols = std::unordered_set<std::shared_ptr<Symbol>>();
-        unresolved_symbols = std::unordered_set<std::shared_ptr<Symbol>>();
+        resolved_symbols = std::unordered_map<std::string, Symbol *>();
+        unresolved_symbols = std::unordered_map<std::string, Symbol *>();
     }
 
     bool has_undefined_symbols() {
-       return unresolved_symbols.size() > 0;
+        return !unresolved_symbols.empty();
     }
 
-    void print_undefined_symbols_error(const std::unordered_map<std::string, std::shared_ptr<ObjectFile>>& object_files);
+    void
+    print_undefined_symbols_error(const std::unordered_map<std::string, std::shared_ptr<ObjectFile>> &object_files);
 
-    friend std::shared_ptr<SymbolResolutionResult> resolveSymbols(
-            const std::unordered_map<std::string, std::shared_ptr<ObjectFile>>& object_files);
+    friend SymbolResolutionResult *resolveSymbols(
+            const std::unordered_map<std::string, std::shared_ptr<ObjectFile>> &object_files);
 
 private:
-    std::unordered_set<std::shared_ptr<Symbol>> resolved_symbols;
-    std::unordered_set<std::shared_ptr<Symbol>> unresolved_symbols;
+    std::unordered_map<std::string, Symbol *> resolved_symbols;
+    std::unordered_map<std::string, Symbol *> unresolved_symbols;
 
-    void add_defined_symbols(std::unordered_set<std::shared_ptr<Symbol>> defined_symbols);
-    void add_undefined_symbols(std::unordered_set<std::shared_ptr<Symbol>> undefined_symbols);
+    void add_defined_symbols(const std::unordered_set<Symbol *> *defined_symbols);
+    void add_undefined_symbols(const std::unordered_set<Symbol *> *undefined_symbols);
 };
 
-std::shared_ptr<SymbolResolutionResult> resolveSymbols(
-        const std::unordered_map<std::string, std::shared_ptr<ObjectFile>>& object_files);
+SymbolResolutionResult *
+resolveSymbols(const std::unordered_map<std::string, std::shared_ptr<ObjectFile>> &object_files);

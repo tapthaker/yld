@@ -10,7 +10,9 @@
 #include <iostream>
 #include <memory>
 #include <elfio/elfio.hpp>
+#include <utility>
 
+class ObjectFile;
 
 
 class RelocationEntry {
@@ -20,26 +22,38 @@ public:
     void describe();
 
 public:
-    RelocationEntry(unsigned long index, unsigned long offset, unsigned long symbolValue, const std::string &symbolName,
-                    unsigned int type, long addend) : index(index), offset(offset),
-                                                      symbol_value(symbolValue), symbol_name(symbolName),
-                                                      type(type), addend(addend){}
+    RelocationEntry(unsigned long index, unsigned long offset, unsigned long symbolValue, std::string symbolName,
+                    unsigned int type, long addend, ObjectFile *const objectFile) : index(index), offset(offset),
+                                                                                    symbol_value(symbolValue),
+                                                                                    symbol_name(std::move(symbolName)),
+                                                                                    type(type), addend(addend),
+                                                                                    object_file(objectFile) {}
 
-    const std::string getSymbolName() const {
-        return symbol_name;
+    const std::string *getSymbolName() const {
+        return &symbol_name;
     }
+
+    ObjectFile *getObjectFile() {
+        return object_file;
+    }
+
+    ELFIO::Elf64_Addr getOffset() const {
+        return offset;
+    }
+
 private:
     ELFIO::Elf_Xword index;
     ELFIO::Elf64_Addr offset;
-    ELFIO::Elf64_Addr  symbol_value;
+    ELFIO::Elf64_Addr symbol_value;
     std::string symbol_name;
-    ELFIO::Elf_Word    type;
-    ELFIO::Elf_Sxword  addend;
+    ELFIO::Elf_Word type;
+    ELFIO::Elf_Sxword addend;
+    ObjectFile *const object_file;
 
 };
 
-std::unordered_set<std::shared_ptr<RelocationEntry>>
-findRelocationEntries(std::shared_ptr<ELFIO::elfio> elf_file);
+std::unordered_map<std::string, std::unordered_set<std::shared_ptr<RelocationEntry>> *> *
+generateRelocationEntries(const std::shared_ptr<ELFIO::elfio> &elf_file, ObjectFile *object_file);
 
 
 #endif //YLD_RELOCATION_H
