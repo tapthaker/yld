@@ -6,7 +6,7 @@
     - [x] Parse ELF Object Files ( Done using [ELFIO](https://github.com/serge1/ELFIO) )
     - [x] Validate that they are generated for **86_64** architecture
     - [x] Symbol Resolution
-    - [] Relocation
-    - [] Generate Binary
-    - [] Support Shared-Library
-    - [] Other steps that I might be forgetting
+    - [ ] Relocation
+    - [ ] Generate Binary
+    - [ ] Support Shared-Library
+    - [ ] Other steps that I might be forgetting
